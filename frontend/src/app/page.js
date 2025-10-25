@@ -13,7 +13,7 @@ export const metadata = {
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-white">
-      {/* <NavBar /> */}
+      {/* sita vieta pakeisti navbar komponentu */}
       <nav className="flex justify-end space-x-6 p-4 text-sm md:text-base font-medium text-black max-w-7xl mx-auto">
         <Link href="/" className="font-bold">Pagrindinis</Link>
         <Link href="/pasiulymai" className="hover:opacity-75">Pasiūlymai</Link>
@@ -43,7 +43,7 @@ export default function HomePage() {
             />
 
             {/* Paieska */}
-            {/* <SearchBar /> */}
+            {/* sita vieta pakeisti searchbar komponentu*/}
             <div className="flex w-full max-w-xl bg-white rounded-full overflow-hidden shadow-lg">
               <input
                 type="text"
