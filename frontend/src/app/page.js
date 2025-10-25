@@ -1,18 +1,23 @@
 import Image from "next/image";
+import Link from "next/link";
 // import NavBar from "@/components/NavBar";
 // import SearchBar from "@/components/SearchBar";
 
 const BACKGROUND_IMAGE_PATH = "/darzoves.jpg";
 const LOGO_IMAGE_PATH = "/sutaupom.png";
 
+export const metadata = {
+  title: 'SUTAUPOM - Pagrindinis',
+};
+
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-white">
       {/* <NavBar /> */}
       <nav className="flex justify-end space-x-6 p-4 text-sm md:text-base font-medium text-black max-w-7xl mx-auto">
-        <a href="/" className="font-bold">Pagrindinis</a>
-        <a href="/pasiulymai" className="hover:opacity-75">Pasiūlymai</a>
-        <a href="/apie-mus" className="hover:opacity-75">Apie mus</a>
+        <Link href="/" className="font-bold">Pagrindinis</Link>
+        <Link href="/pasiulymai" className="hover:opacity-75">Pasiūlymai</Link>
+        <Link href="/apie-mus" className="hover:opacity-75">Apie mus</Link>
       </nav>
 
       {/* Centrinis blokas su fonu */}
