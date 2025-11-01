@@ -1,5 +1,4 @@
-// import NavBar from '@/components/NavBar'; 
-import Link from "next/link";
+import NavBar from '../../../components/NavBar.js';
 
 export const metadata = {
     title: 'Apie Mus | SUTAUPOM',
@@ -9,14 +8,7 @@ export default function ApieMusPage() {
     return (
         <main className="min-h-screen bg-white">
             
-            {/* sita vieta reikes pakeisti navbar komponentu*/}
-            <div className="p-4 border-b border-gray-100">
-                <div className="flex justify-end items-center max-w-7xl mx-auto text-sm md:text-base font-medium">
-                    <Link href="/" className="ml-6 text-gray-600 hover:text-gray-900">Pagrindinis</Link>
-                    <Link href="/pasiulymai" className="ml-6 text-gray-600 hover:text-gray-900">Pasiūlymai</Link>
-                    <Link href="/apie-mus" className="ml-6 font-bold text-gray-900">Apie mus</Link>
-                </div>
-            </div>
+            <NavBar />
 
             {/* centravimas */}
             <div className="flex flex-col items-center pt-10 pb-24 px-4 md:px-8">
