@@ -1,7 +1,6 @@
 "use client";
 import Image from "next/image";
 import NavBar from '../../components/NavBar.js';
-// import NavBar from "@/components/NavBar";
 import SearchBar from "../../components/SearchBar.js";
 
 const BACKGROUND_IMAGE_PATH = "/darzoves.jpg";

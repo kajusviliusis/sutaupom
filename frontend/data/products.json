@@ -1,0 +1,43 @@
+[
+  {
+    "id": 1,
+    "name": "Pomidorai",
+    "store": "Maxima",
+    "price": 1.29,
+    "discount": "-",
+    "image": "/pomidorai.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Agurkai",
+    "store": "Lidl",
+    "price": 0.89,
+    "discount": "-",
+    "image": "/agurkai.jpg"
+  },
+  {
+    "id": 3,
+    "name": "Bulvės",
+    "store": "IKI",
+    "price": 0.59,
+    "discount": "-",
+    "image": "/bulves.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Morkos",
+    "store": "Maxima",
+    "price": 0.99,
+    "discount": "-",
+    "image": "/morkos.jpg"
+  },
+  {
+    "id": 5,
+    "name": "Svogūnai",
+    "store": "Lidl",
+    "price": 0.79,
+    "discount": "-",
+    "image": "/svogunai.jpg"
+  }
+]
+
