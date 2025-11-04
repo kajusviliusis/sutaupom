@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter} from "next/navigation";
 
 export default function SearchBar({ placeholder = "Ieškoti..." }) {
   const [query, setQuery] = useState("");
+  const router = useRouter();
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!query.trim()) return;
+
+    // Make sure there is no leading space in the route path
+    router.push(`/pasiulymai?query=${encodeURIComponent(query)}`);
     console.log("Paieškos užklausa:", query);
   };
 
