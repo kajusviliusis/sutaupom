@@ -6,7 +6,7 @@ export default function ProductCard({ product }) {
       <Image
         src={product.image}
         alt={product.name}
-        width={300}
+        width={400}
         height={200}
         className="h-40 object-contain rounded-md mb-3"
       />
