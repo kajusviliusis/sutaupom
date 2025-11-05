@@ -1,58 +1,58 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import NavBar from '../../../components/NavBar.js';
-import SearchBar from '../../../components/SearchBar.js';
-import productsData from '../../../data/products.json';
+import NavBar from "../../../components/NavBar.js";
+import SearchBar from "../../../components/SearchBar.js";
+import ProductCard from "../../../components/ProductCard.js";
 
 export default function PasiulymaiPage() {
   const searchParams = useSearchParams();
-  const query = searchParams.get("query") || "";
+  const query = searchParams.get("query")?.trim() || ""; 
 
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState([]); 
+  const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
-    if(!query.trim()) return;
+    if (!query) {
+      setProducts([]); 
+      return;
+    }
 
-    const filteredProducts = productsData.filter(p => p.name.toLowerCase().includes(query.toLowerCase())
-  );
+    setLoading(true);
 
-  setProducts(filteredProducts);
-      
-    }, [query]);
+    fetch(`/api/products?query=${encodeURIComponent(query)}`)
+      .then((res) => res.json())
+      .then((data) => setProducts(data))
+      .catch((err) => {
+        console.error("Klaida gaunant produktus:", err);
+        setProducts([]);
+      })
+      .finally(() => setLoading(false));
+
+  }, [query]);
 
   return (
     <main className="min-h-screen bg-white">
-
       <NavBar />
 
-      {/* Paieška */}
+      {/* Paieškos juosta */}
       <section className="px-4 py-8 flex justify-center">
         <SearchBar placeholder="Ieškok pasiūlymų..." />
       </section>
+
+      {/* Rezultatų sąrašas */}
       <section className="px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-semibold mb-6">
-            Pasiūlymai {query ? `: ` + query : ""}
-            </h2>
+            Pasiūlymai {query ? `: ${query}` : ""}
+          </h2>
 
-            {products.length === 0 && <p>Nerasta jokių pasiūlymų.</p>}
+          {loading && <p>Įkeliama...</p>}
+          {!loading && products.length === 0 && <p>Nerasta jokių pasiūlymų.</p>}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {products.map(p => (
-              <div
-              key={p.id}
-              className="border rounded-xl p-4 shadow hover:shadow-lg transition bg-white"
-              >
-                <img
-                src={p.image}
-                alt={p.name}
-                className="w-full h-40 object-contain rounded-lg mb-3"
-                />
-                <h3 className="text-lg font-medium">{p.name}</h3>
-                <p>Parduotuvė: {p.store}</p>
-                <p>Kaina: {p.price} €</p>
-                </div>
+          <div className="flex flex-wraip justify-left gap-6">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
             ))}
           </div>
         </div>
