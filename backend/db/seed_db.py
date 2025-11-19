@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRAPING = ROOT / 'scraping'
+SCRAPING = ROOT / 'scrapping'
 CSV_FILE = SCRAPING / 'rimi_products.csv'
 DB_DIR = ROOT / 'db'
 DB_FILE = DB_DIR / 'products.db'
