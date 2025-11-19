@@ -50,7 +50,7 @@ export default function PasiulymaiPage() {
           {loading && <p>Įkeliama...</p>}
           {!loading && products.length === 0 && <p>Nerasta jokių pasiūlymų.</p>}
 
-          <div className="flex flex-wraip justify-left gap-6">
+          <div className="flex flex-wrap justify-left gap-6">
             {products.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
