@@ -1,35 +1,70 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import NavBar from "../../../components/NavBar.js";
 import SearchBar from "../../../components/SearchBar.js";
 import ProductCard from "../../../components/ProductCard.js";
 
-export default function PasiulymaiPage() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get("query")?.trim() || ""; 
+export const dynamic = 'force-dynamic';
 
-  const [products, setProducts] = useState([]); 
+export default function PasiulymaiPage() {
+  const [query, setQuery] = useState("");
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
-    if (!query) {
-      setProducts([]); 
-      return;
-    }
+    const handleLocationChange = () => {
+      const sp = new URLSearchParams(window.location.search || "");
+      const q = sp.get("query")?.trim() || "";
 
-    setLoading(true);
+      setTimeout(() => {
+        setQuery(q);
 
-    fetch(`/api/products?query=${encodeURIComponent(query)}`)
-      .then((res) => res.json())
-      .then((data) => setProducts(data))
-      .catch((err) => {
-        console.error("Klaida gaunant produktus:", err);
-        setProducts([]);
-      })
-      .finally(() => setLoading(false));
+        if (!q) {
+          setProducts([]);
+          return;
+        }
 
-  }, [query]);
+        setLoading(true);
+
+        fetch(`/api/products?query=${encodeURIComponent(q)}`)
+          .then((res) => res.json())
+          .then((data) => setProducts(data))
+          .catch((err) => {
+            console.error("Klaida gaunant produktus:", err);
+            setProducts([]);
+          })
+          .finally(() => setLoading(false));
+      }, 0);
+    };
+
+    handleLocationChange();
+    // listen for back/forward navigation
+    window.addEventListener("popstate", handleLocationChange);
+    // make history.pushState/replaceState emit a custom event so we detect programmatic navigations
+    const origPush = history.pushState;
+    const origReplace = history.replaceState;
+
+    history.pushState = function () {
+      const result = origPush.apply(this, arguments);
+      window.dispatchEvent(new Event("locationchange"));
+      return result;
+    };
+
+    history.replaceState = function () {
+      const result = origReplace.apply(this, arguments);
+      window.dispatchEvent(new Event("locationchange"));
+      return result;
+    };
+
+    window.addEventListener("locationchange", handleLocationChange);
+
+    return () => {
+      window.removeEventListener("popstate", handleLocationChange);
+      window.removeEventListener("locationchange", handleLocationChange);
+      history.pushState = origPush;
+      history.replaceState = origReplace;
+    };
+  }, []);
 
   return (
     <main className="min-h-screen bg-white">
