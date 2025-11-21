@@ -1,5 +1,6 @@
 import csv
 import time
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -81,7 +82,6 @@ def scrape_barbora(driver):
             print(f"⚠️ Klaida skaitant produktą: {e}")
 
     return scraped
-
 
 if __name__ == "__main__":
     try:

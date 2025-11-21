@@ -139,6 +139,9 @@ def scrape_all_pages(url, max_pages=None):
 
     return all_products
 
+
+# (restored to original: no normalize_image_url in this scraper)
+
 def save_to_csv(products, filename='rimi_products.csv'):
     if not products:
         print("✗ No products to save")
