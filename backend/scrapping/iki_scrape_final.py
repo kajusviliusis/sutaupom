@@ -19,7 +19,7 @@ driver.get("https://www.lastmile.lt/chain/IKI/categories/Akcijos-00sales")
 
 csv_file = open("iki_products.csv", "w", newline="", encoding="utf-8")
 csv_writer = csv.writer(csv_file)
-csv_writer.writerow(["product_name", "shelf_price", "per_unit_price", "image_url"])
+csv_writer.writerow(["product_name", "shelf_price", "image_url"])
 
 products_set = set()
 processed_indices = set()  
@@ -45,22 +45,14 @@ try:
             try:
                 name = element.find_element(By.CSS_SELECTOR, "span[data-testid='main-productCardTitle-text']").text.strip()
                 shelf_price = element.find_element(By.CSS_SELECTOR, "span[data-testid='main-productMainPrice-text-text']").text.strip()
-                
-                per_unit_price = ""
-                for span in element.find_elements(By.CSS_SELECTOR, "span"):
-                    text = span.text.strip()
-                    if "€ /" in text:
-                        per_unit_price = text.split()[0] + " " + text.split()[1]
-                        break
-                
                 img_elem = element.find_element(By.CSS_SELECTOR, "img")
                 image_url = img_elem.get_attribute("src") or img_elem.get_attribute("data-src")
                 
-                product_key = (name, shelf_price, per_unit_price, image_url)
+                product_key = (name, shelf_price, image_url)
                 
                 if product_key not in products_set:
                     products_set.add(product_key)
-                    csv_writer.writerow([name, shelf_price, per_unit_price, image_url])
+                    csv_writer.writerow([name, shelf_price, image_url])
                 
                 processed_indices.add(idx)
             except:
