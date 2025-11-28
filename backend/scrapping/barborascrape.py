@@ -11,13 +11,9 @@ import random
 
 
 def handle_cookies(driver):
-    """
-    Handles cookie consent banner with multiple methods
-    """
-    print("\n🍪 Looking for cookie banner...")
+    print("\nLooking for cookie banner...")
     time.sleep(2)
     
-    # Method 1: Common Lithuanian cookie button texts
     cookie_texts = [
         "Sutinku",
         "Sutikti", 
@@ -33,16 +29,15 @@ def handle_cookies(driver):
             button = WebDriverWait(driver, 3).until(
                 EC.element_to_be_clickable((By.XPATH, f"//button[contains(., '{text}')]"))
             )
-            print(f"✓ Found cookie button: '{text}'")
+            print(f"Found cookie button: '{text}'")
             time.sleep(random.uniform(0.5, 1))
             button.click()
-            print("✓ Clicked cookie button")
+            print("Clicked cookie button")
             time.sleep(1)
             return True
         except:
             continue
     
-    # Method 2: Look for buttons in common cookie banner classes
     try:
         selectors = [
             "button[id*='cookie']",
@@ -59,10 +54,10 @@ def handle_cookies(driver):
             try:
                 button = driver.find_element(By.CSS_SELECTOR, selector)
                 if button.is_displayed():
-                    print(f"✓ Found cookie button with selector: {selector}")
+                    print(f"Found cookie button with selector: {selector}")
                     time.sleep(random.uniform(0.5, 1))
                     button.click()
-                    print("✓ Clicked cookie button")
+                    print("Clicked cookie button")
                     time.sleep(1)
                     return True
             except:
@@ -70,43 +65,37 @@ def handle_cookies(driver):
     except:
         pass
     
-    print("⚠️ No cookie banner found or already accepted")
+    print("No cookie banner found or already accepted")
     return False
 
 
 def handle_verification(driver, manual_wait=False):
-    """
-    Attempts to handle verification with option for manual intervention
-    """
-    print("\n🔍 Looking for verification challenge...")
+    print("\nLooking for verification challenge...")
     time.sleep(3)
     
     if manual_wait:
         print("\n" + "="*60)
-        print("⏸️  MANUAL INTERVENTION MODE")
+        print("MANUAL INTERVENTION MODE")
         print("="*60)
         print("Please manually click the verification checkbox if you see one.")
         print("Waiting 15 seconds...")
         time.sleep(15)
-        print("✓ Continuing...")
+        print("Continuing...")
         return True
     
-    # Take initial screenshot
     try:
         driver.save_screenshot("verification_before.png")
-        print("📸 Saved 'verification_before.png'")
+        print("Saved 'verification_before.png'")
     except:
         pass
     
-    # Save page HTML for debugging
     try:
         with open("verification_page.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
-        print("💾 Saved 'verification_page.html'")
+        print("Saved 'verification_page.html'")
     except:
         pass
     
-    # Method 1: Look for ALL checkboxes and click the first visible one
     try:
         print("  Method 1: Searching for all checkboxes...")
         checkboxes = driver.find_elements(By.CSS_SELECTOR, 'input[type="checkbox"]')
@@ -115,7 +104,6 @@ def handle_verification(driver, manual_wait=False):
         for idx, checkbox in enumerate(checkboxes):
             try:
                 if checkbox.is_displayed() and checkbox.is_enabled() and not checkbox.is_selected():
-                    # Get surrounding text for context
                     parent = checkbox.find_element(By.XPATH, './ancestor::*[1]')
                     context = parent.text[:100] if parent.text else "No text"
                     print(f"  Checkbox {idx+1} context: {context}")
@@ -123,19 +111,17 @@ def handle_verification(driver, manual_wait=False):
                     print(f"  Clicking checkbox {idx+1}...")
                     time.sleep(random.uniform(1, 2))
                     
-                    # Try clicking with JavaScript as backup
                     try:
                         checkbox.click()
                     except:
                         driver.execute_script("arguments[0].click();", checkbox)
                     
-                    print(f"✓ Clicked checkbox {idx+1}")
+                    print(f"Clicked checkbox {idx+1}")
                     time.sleep(4)
                     
-                    # Take screenshot after clicking
                     try:
                         driver.save_screenshot("verification_after_click.png")
-                        print("📸 Saved 'verification_after_click.png'")
+                        print("Saved 'verification_after_click.png'")
                     except:
                         pass
                     
@@ -146,7 +132,6 @@ def handle_verification(driver, manual_wait=False):
     except Exception as e:
         print(f"  Method 1 failed: {e}")
     
-    # Method 2: Look for iframes and checkboxes inside them
     try:
         print("  Method 2: Checking iframes...")
         iframes = driver.find_elements(By.TAG_NAME, 'iframe')
@@ -154,13 +139,11 @@ def handle_verification(driver, manual_wait=False):
         
         for idx, iframe in enumerate(iframes):
             try:
-                # Get iframe src for debugging
                 iframe_src = iframe.get_attribute('src') or 'no src'
                 print(f"  Iframe {idx+1}: {iframe_src[:80]}")
                 
                 driver.switch_to.frame(iframe)
                 
-                # Look for checkboxes in iframe
                 checkboxes = driver.find_elements(By.CSS_SELECTOR, 
                     'input[type="checkbox"], .recaptcha-checkbox, #recaptcha-anchor, [role="checkbox"]')
                 
@@ -177,7 +160,7 @@ def handle_verification(driver, manual_wait=False):
                                 except:
                                     driver.execute_script("arguments[0].click();", checkbox)
                                 
-                                print(f"✓ Clicked checkbox in iframe {idx+1}")
+                                print(f"Clicked checkbox in iframe {idx+1}")
                                 driver.switch_to.default_content()
                                 time.sleep(4)
                                 return True
@@ -193,7 +176,6 @@ def handle_verification(driver, manual_wait=False):
         driver.switch_to.default_content()
         print(f"  Method 2 failed: {e}")
     
-    # Method 3: Look for divs that might be clickable verification
     try:
         print("  Method 3: Looking for clickable verification divs...")
         verification_selectors = [
@@ -216,7 +198,7 @@ def handle_verification(driver, manual_wait=False):
                             print(f"  Clicking element with {selector}...")
                             time.sleep(random.uniform(1, 2))
                             elem.click()
-                            print(f"✓ Clicked element")
+                            print(f"Clicked element")
                             time.sleep(4)
                             return True
             except:
@@ -224,32 +206,28 @@ def handle_verification(driver, manual_wait=False):
     except Exception as e:
         print(f"  Method 3 failed: {e}")
     
-    print("❌ Could not automatically handle verification")
-    print("💡 Tip: Run with manual_wait=True for manual clicking")
+    print("Could not automatically handle verification")
+    print("Tip: Run with manual_wait=True for manual clicking")
     return False
 
 
 def scrape_barbora_products(manual_verification=True):
     chrome_options = Options()
     
-    # Anti-detection measures
     chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option('useAutomationExtension', False)
     
-    # More realistic browser fingerprint
     chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--start-maximized')
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--lang=lt-LT')
-    # Keep browser visible
     # chrome_options.add_argument('--headless=new')
 
     driver = webdriver.Chrome(options=chrome_options)
     
-    # Additional JavaScript to hide automation
     driver.execute_cdp_cmd('Network.setUserAgentOverride', {
         "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     })
@@ -266,21 +244,19 @@ def scrape_barbora_products(manual_verification=True):
 
     try:
         print("="*60)
-        print("🚀 Starting Barbora scraper")
+        print("Starting Barbora scraper")
         print("="*60)
-        print("\n📍 Step 1: Loading homepage...")
+        print("\nStep 1: Loading homepage...")
         driver.get("https://barbora.lt")
         
         time.sleep(3)
         
-        # Handle cookies first
-        print("\n📍 Step 2: Handling cookies...")
+        print("\nStep 2: Handling cookies...")
         handle_cookies(driver)
         
         time.sleep(2)
         
-        # Handle verification
-        print("\n📍 Step 3: Handling verification...")
+        print("\nStep 3: Handling verification...")
         if manual_verification:
             handle_verification(driver, manual_wait=True)
         else:
@@ -288,12 +264,12 @@ def scrape_barbora_products(manual_verification=True):
         
         time.sleep(2)
         
-        print("\n📍 Step 4: Starting product scraping...")
+        print("\nStep 4: Starting product scraping...")
 
         while True:
             url = base_url.format(page)
             print(f"\n{'='*60}")
-            print(f"📄 Page {page}")
+            print(f"Page {page}")
             print(f"{'='*60}")
             driver.get(url)
 
@@ -303,9 +279,9 @@ def scrape_barbora_products(manual_verification=True):
                 WebDriverWait(driver, 20).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, 'li[data-testid^="product-card-"]'))
                 )
-                print("✓ Products loaded")
+                print("Products loaded")
             except TimeoutException:
-                print(f"⚠️ Timeout on page {page}")
+                print(f"Timeout on page {page}")
                 
                 with open(f"page_{page}_debug.html", "w", encoding="utf-8") as f:
                     f.write(driver.page_source)
@@ -323,7 +299,6 @@ def scrape_barbora_products(manual_verification=True):
 
             time.sleep(random.uniform(2, 3))
 
-            # Scroll
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight/3);")
             time.sleep(random.uniform(0.5, 1))
             driver.execute_script("window.scrollTo(0, 0);")
@@ -371,13 +346,13 @@ def scrape_barbora_products(manual_verification=True):
                         new_count += 1
                         
                         if idx == 0:
-                            print(f"  📦 {product['title'][:50]}...")
-                            print(f"     💰 {product['price']}€ (was {product['retail_price']}€)")
+                            print(f"  {product['title'][:50]}...")
+                            print(f"     {product['price']} (was {product['retail_price']})")
                 
                 except:
                     continue
 
-            print(f"  ✅ Added {new_count} products (Total: {len(all_products)})")
+            print(f"  Added {new_count} products (Total: {len(all_products)})")
 
             if new_count == 0:
                 consecutive_empty_pages += 1
@@ -393,29 +368,28 @@ def scrape_barbora_products(manual_verification=True):
             df = pd.DataFrame(all_products)
             df.to_csv("barbora_all_pages.csv", index=False, encoding="utf-8")
             print(f"\n{'='*60}")
-            print(f"🎉 SUCCESS!")
+            print(f"SUCCESS!")
             print(f"{'='*60}")
-            print(f"📊 Scraped {len(all_products)} total products")
-            print(f"💾 Saved to 'barbora_all_pages.csv'")
+            print(f"Scraped {len(all_products)} total products")
+            print(f"Saved to 'barbora_all_pages.csv'")
             
 
     
             return df
         else:
-            print("\n❌ No products scraped!")
+            print("\nNo products scraped!")
             return None
 
     except Exception as e:
-        print(f"\n💥 Error: {e}")
+        print(f"\nError: {e}")
         import traceback
         traceback.print_exc()
         if all_products:
             pd.DataFrame(all_products).to_csv("barbora_partial.csv", index=False)
     finally:
-        print("\n🔒 Closing browser in 3 seconds...")
+        print("\nClosing browser in 3 seconds...")
         time.sleep(3)
         driver.quit()
         
 if __name__ == "__main__":
-    # Set manual_verification=True to manually click the checkbox
     scrape_barbora_products(manual_verification=True)
