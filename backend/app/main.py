@@ -208,18 +208,51 @@ def admin_import_csvs(_auth: bool = Depends(check_api_key)):
             for row in reader:
                 file_stats["rows"] += 1
                 # heuristics for column names
-                shop = row.get('shop_name') or row.get('shop') or row.get('store') or row.get('shopName')
-                pname = row.get('product_name') or row.get('product') or row.get('name') or row.get('productName')
-                price_raw = row.get('shelf_price') or row.get('price') or row.get('shelfPrice')
-                image = row.get('image_url') or row.get('image') or row.get('imageUrl')
+                # heuristics for column names (include some site-specific fallbacks)
+                shop = (
+                    row.get('shop_name')
+                    or row.get('shop')
+                    or row.get('store')
+                    or row.get('shopName')
+                )
+                pname = (
+                    row.get('product_name')
+                    or row.get('product')
+                    or row.get('name')
+                    or row.get('productName')
+                    or row.get('title')
+                )
+                price_raw = (
+                    row.get('shelf_price')
+                    or row.get('price')
+                    or row.get('shelfPrice')
+                )
+                image = (
+                    row.get('image_url')
+                    or row.get('image')
+                    or row.get('imageUrl')
+                    or row.get('image_small')
+                )
 
-                if not shop or not pname or not price_raw:
+                # If shop is missing in CSV, infer it from the filename (e.g. 'barbora_all_pages.csv' -> 'barbora')
+                if not shop:
+                    inferred = os.path.splitext(fname)[0]
+                    # take leading token before common delimiters
+                    inferred = inferred.split('_')[0].split('-')[0].split('.')[0]
+                    shop = inferred
+
+                if not pname or not price_raw:
                     file_stats['skipped'] += 1
                     continue
 
-                # normalize price
+                # normalize price: strip currency symbols, non-numeric characters (except ., - and ,),
+                # convert comma to dot and parse as float
                 try:
-                    price = float(str(price_raw).replace(',', '.').strip())
+                    import re
+
+                    cleaned = re.sub(r"[^0-9,\.\-]", "", str(price_raw))
+                    cleaned = cleaned.replace(',', '.')
+                    price = float(cleaned.strip())
                 except Exception:
                     file_stats['skipped'] += 1
                     continue
