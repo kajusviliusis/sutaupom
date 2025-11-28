@@ -179,3 +179,94 @@ def admin_dump(_auth: bool = Depends(check_api_key)):
         return Response(content=sqltext, media_type="application/sql")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/import-csvs")
+def admin_import_csvs(_auth: bool = Depends(check_api_key)):
+    """Scan bundled `scrapping` CSV files and import rows into `stores`, `products`, and `prices`.
+    Protected by `ADMIN_API_KEY`.
+    """
+    scrapping_dir = "/app/scrapping"
+    if not os.path.exists(scrapping_dir):
+        raise HTTPException(status_code=500, detail=f"scrapping directory not found at {scrapping_dir}")
+
+    csv_files = [f for f in os.listdir(scrapping_dir) if f.lower().endswith('.csv')]
+    if not csv_files:
+        return {"status": "no_csv_found", "files": []}
+
+    stats = {"files": [], "stores_created": 0, "products_created": 0, "prices_inserted": 0, "errors": 0}
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    for fname in csv_files:
+        fpath = os.path.join(scrapping_dir, fname)
+        file_stats = {"file": fname, "rows": 0, "inserted": 0, "skipped": 0}
+        try:
+            with open(fpath, 'r', encoding='utf-8', errors='replace') as fh:
+                text = fh.read()
+            reader = csv.DictReader(io.StringIO(text))
+            for row in reader:
+                file_stats["rows"] += 1
+                # heuristics for column names
+                shop = row.get('shop_name') or row.get('shop') or row.get('store') or row.get('shopName')
+                pname = row.get('product_name') or row.get('product') or row.get('name') or row.get('productName')
+                price_raw = row.get('shelf_price') or row.get('price') or row.get('shelfPrice')
+                image = row.get('image_url') or row.get('image') or row.get('imageUrl')
+
+                if not shop or not pname or not price_raw:
+                    file_stats['skipped'] += 1
+                    continue
+
+                # normalize price
+                try:
+                    price = float(str(price_raw).replace(',', '.').strip())
+                except Exception:
+                    file_stats['skipped'] += 1
+                    continue
+
+                # insert or ignore store
+                cur.execute("INSERT OR IGNORE INTO stores (name) VALUES (?)", (shop,))
+                cur.execute("SELECT store_id FROM stores WHERE name = ?", (shop,))
+                store_id = cur.fetchone()[0]
+
+                # insert or ignore product (try to store image_url if provided)
+                if image:
+                    cur.execute("INSERT OR IGNORE INTO products (name, image_url) VALUES (?, ?)", (pname, image))
+                    # if product exists but image is empty, attempt to update
+                    cur.execute("SELECT product_id, image_url FROM products WHERE name = ?", (pname,))
+                    prow = cur.fetchone()
+                    product_id = prow[0]
+                    existing_image = prow[1]
+                    if existing_image in (None, '') and image:
+                        cur.execute("UPDATE products SET image_url = ? WHERE product_id = ?", (image, product_id))
+                else:
+                    cur.execute("INSERT OR IGNORE INTO products (name) VALUES (?)", (pname,))
+                    cur.execute("SELECT product_id FROM products WHERE name = ?", (pname,))
+                    product_id = cur.fetchone()[0]
+
+                # insert price row
+                cur.execute(
+                    "INSERT INTO prices (product_id, store_id, price) VALUES (?, ?, ?)",
+                    (product_id, store_id, price),
+                )
+                file_stats['inserted'] += 1
+                stats['prices_inserted'] += 1
+
+        except Exception as e:
+            stats['errors'] += 1
+            file_stats['error'] = str(e)
+
+        stats['files'].append(file_stats)
+
+    conn.commit()
+    # compute created counts (approx) from tables
+    try:
+        cur.execute("SELECT COUNT(*) FROM stores")
+        stats['stores_created'] = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM products")
+        stats['products_created'] = cur.fetchone()[0]
+    except Exception:
+        pass
+
+    conn.close()
+    return stats
