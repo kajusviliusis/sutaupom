@@ -5,6 +5,7 @@ import sqlite3
 import os
 import csv
 import io
+from fastapi.responses import Response
 
 app = FastAPI(title="Products API")
 
@@ -137,5 +138,44 @@ def init_db(_auth: bool = Depends(check_api_key)):
         conn.executescript(sql)
         conn.close()
         return {"status": "initialized", "path": DB_PATH}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/status")
+def admin_status(_auth: bool = Depends(check_api_key)):
+    """Return list of tables and row counts."""
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail=f"Database file not found at {DB_PATH}")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        tables = [r[0] for r in cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        result = {}
+        for t in tables:
+            try:
+                cnt = cur.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+            except Exception as e:
+                cnt = f"error: {e}"
+            result[t] = cnt
+        conn.close()
+        return {"path": DB_PATH, "tables": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/dump")
+def admin_dump(_auth: bool = Depends(check_api_key)):
+    """Return an SQL dump of the database as plain text."""
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail=f"Database file not found at {DB_PATH}")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        buf = io.StringIO()
+        for line in conn.iterdump():
+            buf.write(f"{line}\n")
+        conn.close()
+        sqltext = buf.getvalue()
+        return Response(content=sqltext, media_type="application/sql")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
