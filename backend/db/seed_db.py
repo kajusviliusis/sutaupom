@@ -36,12 +36,11 @@ def seed_from_csv(conn, csv_path, shop_name=None):
         reader = csv.DictReader(fh)
         rows = []
         for idx, r in enumerate(reader):
-            # Užtikrinam, kad name visada būtų užpildytas
+            # Ensure name is always filled
             name = r.get('product_name') or r.get('name') or r.get('title') or ''
             if not name:
-                # fallback: bandome shop_name + idx, kad nebūtų tuščias
+                # fallback: try shop_name + idx if empty
                 name = f"{r.get('shop_name', shop_name)}_{idx}" if (r.get('shop_name') or shop_name) else f"produktas_{idx}"
-
             price_text = r.get('price') or r.get('shelf_price') or r.get('kaina') or ''
             if not price_text and r.get('title'):
                 price_text = r.get('price') or ''
@@ -110,7 +109,6 @@ def main():
         count += seed_from_csv(conn, lidl_csv, shop_name='lidl')
     else:
         print(f"CSV file not found: {lidl_csv}")
-
     print(f"Inserted {count} rows into {DB_FILE}")
     conn.close()
 
