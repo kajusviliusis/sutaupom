@@ -116,3 +116,26 @@ async def upload_scrape(file: UploadFile = File(...), _auth: bool = Depends(chec
         return {"status": "ok", "inserted": inserted}
 
     raise HTTPException(status_code=400, detail="Unsupported file type")
+
+
+@app.post("/admin/init-db")
+def init_db(_auth: bool = Depends(check_api_key)):
+    """Initialize the SQLite DB on the data volume from the SQL dump bundled in the image.
+    Protected by ADMIN_API_KEY when set.
+    """
+    if os.path.exists(DB_PATH):
+        return {"status": "exists", "path": DB_PATH}
+
+    dump_path = "/app/scrapping/database_sqlite.sql"
+    if not os.path.exists(dump_path):
+        raise HTTPException(status_code=500, detail=f"SQL dump not found at {dump_path}")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        with open(dump_path, "r", encoding="utf-8") as f:
+            sql = f.read()
+        conn.executescript(sql)
+        conn.close()
+        return {"status": "initialized", "path": DB_PATH}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
