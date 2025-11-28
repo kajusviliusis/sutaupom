@@ -89,13 +89,18 @@
 
       <div className="flex-1">
         <h3 className="font-semibold text-lg mb-1 h-12 overflow-hidden">{product?.name}</h3>
-        <p className="text-sm text-gray-500 mb-2 h-5 overflow-hidden">{product?.store}</p>
+        {/* Parduotuvės pavadinimas rodomas tik badge apačioje */}
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 flex items-center justify-between">
         <p className="font-bold text-lg">{String(primaryPrice).includes('€') ? primaryPrice : `${primaryPrice} €`}</p>
-        {perKgLabel && <p className="text-sm text-gray-500">{perKgLabel}</p>}
+        {(product?.shop || product?.shop_name) && (
+          <span className="ml-2 px-2 py-1 rounded bg-gray-100 text-xs font-semibold text-gray-700">
+            {product?.shop || product?.shop_name}
+          </span>
+        )}
       </div>
+      {perKgLabel && <p className="text-sm text-gray-500">{perKgLabel}</p>}
     </div>
   );
 }

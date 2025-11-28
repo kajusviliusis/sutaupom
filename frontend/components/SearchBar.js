@@ -11,7 +11,7 @@ export default function SearchBar({ placeholder = "Ieškoti..." }) {
     e.preventDefault();
     if (!query.trim()) return;
 
-    // Make sure there is no leading space in the route path
+    
     router.push(`/pasiulymai?query=${encodeURIComponent(query)}`);
     console.log("Paieškos užklausa:", query);
   };
