@@ -1,12 +1,17 @@
 #!/bin/sh
 set -e
 DB=/data/database.sqlite
+# Ensure data directory exists and is writable
+mkdir -p /data
+chmod 0777 /data || true
+
 if [ ! -f "$DB" ]; then
   echo "Initializing DB at $DB"
   if [ -f /app/scrapping/database_sqlite.sql ]; then
     # Use Python to execute the SQL dump so we don't require the sqlite3 binary in the image
     python - <<PYTHON || true
-import sqlite3
+import sqlite3, os
+os.makedirs(os.path.dirname('$DB'), exist_ok=True)
 conn = sqlite3.connect('$DB')
 with open('/app/scrapping/database_sqlite.sql', 'r', encoding='utf-8') as f:
     sql = f.read()
