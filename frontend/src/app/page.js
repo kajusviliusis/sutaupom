@@ -8,8 +8,7 @@ const LOGO_IMAGE_PATH = "/sutaupom.png";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-white">
-
+    <main className="min-h-screen bg-white flex flex-col min-h-screen">
       <NavBar />
 
       {/* Centrinis blokas su fonu */}
@@ -33,12 +32,25 @@ export default function HomePage() {
               priority
               className="w-auto h-auto mb-10"
             />
+            {/* mazesnis logo apacioje - perkelta i pati apacia */}
 
             {/* Paieska */}
             <SearchBar placeholder="Ieškok pasiūlymų..." />
           </div>
         </div>
       </section>
+
+      {/* Mazas logotipas desineje apacioje */}
+      <div className="w-[90%] mx-auto flex justify-end items-center mb-1">
+        <Image 
+          src="/Logo.png"
+          alt="Mazas logo"
+          width={90}
+          height={40}
+        />
+      </div>
+      {/* Horizontal line at the bottom */}
+      <div className="w-[90%] mx-auto border-t border-gray-300 mt-1 mb-2"></div>
     </main>
   );
 }
