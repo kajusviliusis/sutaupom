@@ -9,13 +9,10 @@ from fastapi.responses import Response
 
 app = FastAPI(title="Products API")
 
-# Config
 DB_PATH = os.environ.get("DATABASE_PATH", "/data/database.sqlite")
 ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
 
-origins = [
-    "http://localhost:3000",
-]
+origins = ["http://localhost:3000"]
 VERCEL_URL = os.environ.get("VERCEL_URL")
 if VERCEL_URL:
     origins.append(VERCEL_URL)
@@ -66,7 +63,6 @@ def list_products(limit: int = 200):
 async def upload_scrape(file: UploadFile = File(...), _auth: bool = Depends(check_api_key)):
     content_type = file.content_type or ""
     content = await file.read()
-    # CSV handler
     if "csv" in content_type or file.filename.endswith(".csv"):
         text = content.decode("utf-8")
         reader = csv.DictReader(io.StringIO(text))
@@ -74,7 +70,6 @@ async def upload_scrape(file: UploadFile = File(...), _auth: bool = Depends(chec
         cur = conn.cursor()
         inserted = 0
         for row in reader:
-            # Attempt to insert common columns; adapt as needed for your schema
             try:
                 cur.execute(
                     "INSERT OR IGNORE INTO products (id, name, price) VALUES (?, ?, ?)",
@@ -82,13 +77,11 @@ async def upload_scrape(file: UploadFile = File(...), _auth: bool = Depends(chec
                 )
                 inserted += 1
             except Exception:
-                # best-effort: skip rows that don't match schema
                 continue
         conn.commit()
         conn.close()
         return {"status": "ok", "inserted": inserted}
 
-    # JSON handler
     if "json" in content_type or file.filename.endswith(".json"):
         import json
 
@@ -121,9 +114,6 @@ async def upload_scrape(file: UploadFile = File(...), _auth: bool = Depends(chec
 
 @app.post("/admin/init-db")
 def init_db(_auth: bool = Depends(check_api_key)):
-    """Initialize the SQLite DB on the data volume from the SQL dump bundled in the image.
-    Protected by ADMIN_API_KEY when set.
-    """
     if os.path.exists(DB_PATH):
         return {"status": "exists", "path": DB_PATH}
 
@@ -144,7 +134,6 @@ def init_db(_auth: bool = Depends(check_api_key)):
 
 @app.get("/admin/status")
 def admin_status(_auth: bool = Depends(check_api_key)):
-    """Return list of tables and row counts."""
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail=f"Database file not found at {DB_PATH}")
     try:
@@ -166,7 +155,6 @@ def admin_status(_auth: bool = Depends(check_api_key)):
 
 @app.get("/admin/dump")
 def admin_dump(_auth: bool = Depends(check_api_key)):
-    """Return an SQL dump of the database as plain text."""
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail=f"Database file not found at {DB_PATH}")
     try:
@@ -183,9 +171,6 @@ def admin_dump(_auth: bool = Depends(check_api_key)):
 
 @app.post("/admin/import-csvs")
 def admin_import_csvs(_auth: bool = Depends(check_api_key)):
-    """Scan bundled `scrapping` CSV files and import rows into `stores`, `products`, and `prices`.
-    Protected by `ADMIN_API_KEY`.
-    """
     scrapping_dir = "/app/scrapping"
     if not os.path.exists(scrapping_dir):
         raise HTTPException(status_code=500, detail=f"scrapping directory not found at {scrapping_dir}")
@@ -207,8 +192,6 @@ def admin_import_csvs(_auth: bool = Depends(check_api_key)):
             reader = csv.DictReader(io.StringIO(text))
             for row in reader:
                 file_stats["rows"] += 1
-                # heuristics for column names
-                # heuristics for column names (include some site-specific fallbacks)
                 shop = (
                     row.get('shop_name')
                     or row.get('shop')
@@ -234,10 +217,8 @@ def admin_import_csvs(_auth: bool = Depends(check_api_key)):
                     or row.get('image_small')
                 )
 
-                # If shop is missing in CSV, infer it from the filename (e.g. 'barbora_all_pages.csv' -> 'barbora')
                 if not shop:
                     inferred = os.path.splitext(fname)[0]
-                    # take leading token before common delimiters
                     inferred = inferred.split('_')[0].split('-')[0].split('.')[0]
                     shop = inferred
 
@@ -245,8 +226,6 @@ def admin_import_csvs(_auth: bool = Depends(check_api_key)):
                     file_stats['skipped'] += 1
                     continue
 
-                # normalize price: strip currency symbols, non-numeric characters (except ., - and ,),
-                # convert comma to dot and parse as float
                 try:
                     import re
 
@@ -257,15 +236,12 @@ def admin_import_csvs(_auth: bool = Depends(check_api_key)):
                     file_stats['skipped'] += 1
                     continue
 
-                # insert or ignore store
                 cur.execute("INSERT OR IGNORE INTO stores (name) VALUES (?)", (shop,))
                 cur.execute("SELECT store_id FROM stores WHERE name = ?", (shop,))
                 store_id = cur.fetchone()[0]
 
-                # insert or ignore product (try to store image_url if provided)
                 if image:
                     cur.execute("INSERT OR IGNORE INTO products (name, image_url) VALUES (?, ?)", (pname, image))
-                    # if product exists but image is empty, attempt to update
                     cur.execute("SELECT product_id, image_url FROM products WHERE name = ?", (pname,))
                     prow = cur.fetchone()
                     product_id = prow[0]
@@ -277,7 +253,6 @@ def admin_import_csvs(_auth: bool = Depends(check_api_key)):
                     cur.execute("SELECT product_id FROM products WHERE name = ?", (pname,))
                     product_id = cur.fetchone()[0]
 
-                # insert price row
                 cur.execute(
                     "INSERT INTO prices (product_id, store_id, price) VALUES (?, ?, ?)",
                     (product_id, store_id, price),
@@ -292,7 +267,6 @@ def admin_import_csvs(_auth: bool = Depends(check_api_key)):
         stats['files'].append(file_stats)
 
     conn.commit()
-    # compute created counts (approx) from tables
     try:
         cur.execute("SELECT COUNT(*) FROM stores")
         stats['stores_created'] = cur.fetchone()[0]
