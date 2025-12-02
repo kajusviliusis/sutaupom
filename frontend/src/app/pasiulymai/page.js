@@ -14,6 +14,7 @@ export default function PasiulymaiPage() {
   const [sort, setSort] = useState(""); // default: nerūšiuota pagal kainą
   const [shop, setShop] = useState(""); // default: visos parduotuvės
 
+  // Effect for query and shop (search/filter)
   useEffect(() => {
     const handleLocationChange = () => {
       const sp = new URLSearchParams(window.location.search || "");
@@ -21,13 +22,9 @@ export default function PasiulymaiPage() {
 
       setTimeout(() => {
         setQuery(q);
-
-        if (!q) {
-          setProducts([]);
-          return;
-        }
-
         setLoading(true);
+
+        if (!q) return; // Don't fetch here if no query
 
         // Siunčiam pasirinktus sort ir shop parametrus į API
         fetch(`/api/products?query=${encodeURIComponent(q)}&sort=${sort}&shop=${shop}`)
@@ -67,6 +64,25 @@ export default function PasiulymaiPage() {
       history.replaceState = origReplace;
     };
   }, [sort, shop]);
+
+  // Effect for random products (no query)
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search || "");
+    const q = sp.get("query")?.trim() || "";
+    if (q) return;
+    setLoading(true);
+    fetch(`/api/products`)
+      .then((res) => res.json())
+      .then((data) => {
+        const shuffled = data.sort(() => 0.5 - Math.random());
+        setProducts(shuffled.slice(0, 12));
+      })
+      .catch((err) => {
+        console.error("Klaida gaunant produktus:", err);
+        setProducts([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <main className="min-h-screen bg-white">
