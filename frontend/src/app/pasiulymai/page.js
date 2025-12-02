@@ -116,7 +116,7 @@ export default function PasiulymaiPage() {
               onClick={() => setShop("barbora")}
               className={`px-3 py-1 rounded border ${shop === "barbora" ? "bg-green-600 text-white" : "bg-white text-black border-gray-300"}`}
             >
-              Barbora
+              Maxima
             </button>
             <button
               onClick={() => setShop("iki")}
