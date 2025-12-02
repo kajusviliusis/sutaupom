@@ -1,0 +1,115 @@
+name: Run Scrapers Every Tuesday
+
+on:
+  schedule:
+    # Runs every Tuesday at 00:00 Lithuania time (22:00 UTC Monday)
+    # Lithuania is UTC+2 (winter) or UTC+3 (summer), using UTC+2 as base
+    - cron: '0 22 * * 1'
+  
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+env:
+  TZ: Europe/Vilnius
+
+jobs:
+  run-scrapers:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Run Barbora scraper
+      id: barbora
+      continue-on-error: true
+      run: |
+        echo "Starting Barbora scraper..."
+        python barborascrape.py
+        echo "status=$?" >> $GITHUB_OUTPUT
+    
+    - name: Run LastMile (IKI) scraper
+      id: lastmile
+      continue-on-error: true
+      run: |
+        echo "Starting LastMile scraper..."
+        python iki_scrape_final.py
+        echo "status=$?" >> $GITHUB_OUTPUT
+    
+    - name: Run Lidl scraper
+      id: lidl
+      continue-on-error: true
+      run: |
+        echo "Starting Lidl scraper..."
+        python lidlscrape.py
+        echo "status=$?" >> $GITHUB_OUTPUT
+    
+    - name: Run Rimi scraper
+      id: rimi
+      continue-on-error: true
+      run: |
+        echo "Starting Rimi scraper..."
+        python rimi_scrape_kodas.py
+        echo "status=$?" >> $GITHUB_OUTPUT
+    
+    - name: Upload CSV outputs
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: scraper-outputs-${{ github.run_number }}
+        path: |
+          *.csv
+          *.log
+        retention-days: 30
+    
+    - name: Commit and push results (if CSV files changed)
+      if: always()
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add *.csv || true
+        git diff --staged --quiet || git commit -m "Update scraper data - $(date +'%Y-%m-%d %H:%M:%S')"
+        git push || true
+    
+    - name: Generate summary
+      if: always()
+      run: |
+        echo "## 📊 Scraper Run Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Date:** $(date +'%Y-%m-%d %H:%M:%S %Z')" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Scraper | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.barbora.outputs.status }}" == "0" ]; then
+          echo "| Barbora | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| Barbora | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ steps.lastmile.outputs.status }}" == "0" ]; then
+          echo "| LastMile (IKI) | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| LastMile (IKI) | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ steps.lidl.outputs.status }}" == "0" ]; then
+          echo "| Lidl | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| Lidl | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ steps.rimi.outputs.status }}" == "0" ]; then
+          echo "| Rimi | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| Rimi | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
