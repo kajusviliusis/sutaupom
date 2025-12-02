@@ -1,9 +1,9 @@
-﻿export default function ProductCard({ product }) {
+export default function ProductCard({ product }) {
   const fallback =
     'data:image/svg+xml;utf8,' +
     '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">' +
-    '<rect width="100%" height="100%" fill="%23f3f4f6"/>' +
-    '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23888" font-family="Arial,sans-serif" font-size="20">No image</text>' +
+    '<rect width="100%" height="100%" fill="%23ffffff"/>' +
+    '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23bbb" font-family="Arial,sans-serif" font-size="20">No image</text>' +
     '</svg>';
 
   const formatNumber = (v) => {
@@ -38,7 +38,6 @@
     }
   };
 
-  
   let primaryPrice = null;
   const candidates = [
     product?.price,
@@ -50,7 +49,6 @@
     product?.priceString,
     product?.priceStringRaw,
   ];
-
   for (const c of candidates) {
     const f = formatNumber(c) ?? extractFirstNumber(c);
     if (f) {
@@ -73,14 +71,20 @@
     }
   }
 
+  const shopRaw = product?.shop || product?.shop_name;
+  let shopDisplay = shopRaw;
+  if (typeof shopRaw === 'string' && shopRaw.toLowerCase() === 'barbora') {
+    shopDisplay = 'Maxima';
+  }
+
   return (
     <div className="w-64 p-4 border rounded-lg shadow-sm hover:shadow-md transition flex flex-col justify-between bg-white">
-      <div className="h-36 mb-3 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+      <div className="h-40 mb-3 bg-white rounded-md flex items-center justify-center">
         <img
           src={normalizeImageUrl(product?.image) || fallback}
           alt={product?.name || 'product image'}
           loading="lazy"
-          className="h-full w-full object-cover"
+          className="max-h-full max-w-full object-contain"
           onError={(e) => {
             if (e?.currentTarget?.src !== fallback) e.currentTarget.src = fallback;
           }}
@@ -88,15 +92,14 @@
       </div>
 
       <div className="flex-1">
-        <h3 className="font-semibold text-lg mb-1 h-12 overflow-hidden">{product?.name}</h3>
-        {/* Parduotuvės pavadinimas rodomas tik badge apačioje */}
+        <h3 className="font-semibold text-lg mb-1 break-words">{product?.name}</h3>
       </div>
 
       <div className="mt-3 flex items-center justify-between">
         <p className="font-bold text-lg">{String(primaryPrice).includes('€') ? primaryPrice : `${primaryPrice} €`}</p>
-        {(product?.shop || product?.shop_name) && (
+        {shopDisplay && (
           <span className="ml-2 px-2 py-1 rounded bg-gray-100 text-xs font-semibold text-gray-700">
-            {product?.shop || product?.shop_name}
+            {shopDisplay}
           </span>
         )}
       </div>
