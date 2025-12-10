@@ -101,48 +101,48 @@ export default function PasiulymaiPage() {
       {/* Filtrų ir rūšiavimo mygtukai */}
       <section className="px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="font-semibold mr-2">Rūšiuoti:</span>
+          <div className="flex flex-wrap gap-2 mb-4 items-center">
+            <span className="btn-label mr-2">Rūšiuoti:</span>
             <button
               onClick={() => setSort("price_asc")}
-              className={`px-3 py-1 rounded border ${sort === "price_asc" ? "bg-blue-600 text-white" : "bg-white text-black border-gray-300"}`}
+              className={`btn ${sort === "price_asc" ? "btn-black btn-active" : "btn-ghost"}`}
             >
               Kaina ↑
             </button>
             <button
               onClick={() => setSort("price_desc")}
-              className={`px-3 py-1 rounded border ${sort === "price_desc" ? "bg-blue-600 text-white" : "bg-white text-black border-gray-300"}`}
+              className={`btn ${sort === "price_desc" ? "btn-black btn-active" : "btn-ghost"}`}
             >
               Kaina ↓
             </button>
-            <span className="font-semibold ml-4 mr-2">Parduotuvė:</span>
+            <span className="btn-label ml-4 mr-2">Parduotuvė:</span>
             <button
               onClick={() => setShop("")}
-              className={`px-3 py-1 rounded border ${shop === "" ? "bg-green-600 text-white" : "bg-white text-black border-gray-300"}`}
+              className={`btn ${shop === "" ? "btn-black btn-active" : "btn-ghost"}`}
             >
               Visos
             </button>
             <button
               onClick={() => setShop("rimi")}
-              className={`px-3 py-1 rounded border ${shop === "rimi" ? "bg-green-600 text-white" : "bg-white text-black border-gray-300"}`}
+              className={`btn ${shop === "rimi" ? "btn-black btn-active" : "btn-ghost"}`}
             >
               Rimi
             </button>
             <button
               onClick={() => setShop("barbora")}
-              className={`px-3 py-1 rounded border ${shop === "barbora" ? "bg-green-600 text-white" : "bg-white text-black border-gray-300"}`}
+              className={`btn ${shop === "barbora" ? "btn-black btn-active" : "btn-ghost"}`}
             >
               Maxima
             </button>
             <button
               onClick={() => setShop("iki")}
-              className={`px-3 py-1 rounded border ${shop === "iki" ? "bg-green-600 text-white" : "bg-white text-black border-gray-300"}`}
+              className={`btn ${shop === "iki" ? "btn-black btn-active" : "btn-ghost"}`}
             >
               Iki
             </button>
             <button
               onClick={() => setShop("lidl")}
-              className={`px-3 py-1 rounded border ${shop === "lidl" ? "bg-green-600 text-white" : "bg-white text-black border-gray-300"}`}
+              className={`btn ${shop === "lidl" ? "btn-black btn-active" : "btn-ghost"}`}
             >
               Lidl
             </button>
