@@ -2,11 +2,8 @@ name: Run Scrapers Every Tuesday
 
 on:
   schedule:
-    # Runs every Tuesday at 00:00 Lithuania time (22:00 UTC Monday)
-    # Lithuania is UTC+2 (winter) or UTC+3 (summer), using UTC+2 as base
     - cron: "0 22 * * 1"
-
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 env:
   TZ: Europe/Vilnius
@@ -31,16 +28,14 @@ jobs:
           sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
-
-          # Install ChromeDriver
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1)
-          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
-          wget -q "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/chromedriver
-
-          # Verify installation
+          
+          # Install ChromeDriver from Ubuntu packages (more reliable)
+          sudo apt-get install -y chromium-chromedriver
+          
+          # Create symlink to standard location
+          sudo ln -sf /usr/lib/chromium-browser/chromedriver /usr/local/bin/chromedriver || true
+          
+          # Verify installations
           google-chrome --version
           chromedriver --version
 
@@ -55,10 +50,11 @@ jobs:
         run: |
           echo "Starting IKI scraper..."
           cd scrapping
-          python iki_scrape_final.py
+          python -u iki_scrape_final.py 2>&1 | tee iki.log || true
           STATUS=$?
           cd ..
           echo "status=${STATUS}" >> $GITHUB_OUTPUT
+          echo "IKI scraper completed with exit code: $STATUS"
 
       - name: Run Lidl scraper
         id: lidl
@@ -66,7 +62,7 @@ jobs:
         run: |
           echo "Starting Lidl scraper..."
           cd scrapping
-          python lidlscrape.py
+          python lidlscrape.py 2>&1 | tee lidl.log
           STATUS=$?
           cd ..
           echo "status=${STATUS}" >> $GITHUB_OUTPUT
@@ -77,10 +73,25 @@ jobs:
         run: |
           echo "Starting Rimi scraper..."
           cd scrapping
-          python rimi_scrape_kodas.py
+          python rimi_scrape_kodas.py 2>&1 | tee rimi.log
           STATUS=$?
           cd ..
           echo "status=${STATUS}" >> $GITHUB_OUTPUT
+
+      - name: Check Python and dependencies
+        run: |
+          echo "Python version:"
+          python --version
+          echo ""
+          echo "Installed packages:"
+          pip list | grep -E "selenium|pandas|beautifulsoup"
+          echo ""
+          echo "ChromeDriver location:"
+          which chromedriver
+          chromedriver --version
+          echo ""
+          echo "Checking scrapping folder:"
+          ls -la scrapping/ | head -20
 
       - name: Upload CSV outputs
         uses: actions/upload-artifact@v4
