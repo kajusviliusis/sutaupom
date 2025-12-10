@@ -7,7 +7,10 @@ export async function GET(request) {
     const search = url.searchParams.get("query");
 
     const sort = url.searchParams.get("sort");
-    const shop = url.searchParams.get("shop")
+    const shop = url.searchParams.get("shop");
+    const random = url.searchParams.get("random") === "true";
+    const limitParam = url.searchParams.get("limit");
+    const limit = Math.max(1, Math.min(1000, Number(limitParam) || 500));
 
 
     // Try to read from SQLite DB first (better for real deployments).
@@ -48,14 +51,16 @@ export async function GET(request) {
         sql += " AND LOWER(shop) = ?";
         params.push(shop.toLowerCase());
       }
-      if (sort === "price_asc") {
+      if (random) {
+        sql += " ORDER BY RANDOM()";
+      } else if (sort === "price_asc") {
         sql += " ORDER BY shelf_price ASC";
       } else if (sort === "price_desc") {
         sql += " ORDER BY shelf_price DESC";
       } else {
         sql += " ORDER BY id DESC";
       }
-      sql += " LIMIT 500";
+      sql += " LIMIT " + limit;
       rows = db.prepare(sql).all(...params);
 
       const products = rows.map(r => ({
@@ -82,6 +87,18 @@ export async function GET(request) {
       if (search) {
         const q = search.trim().toLowerCase();
         products = products.filter((p) => p.name && p.name.toLowerCase().includes(q));
+      }
+      if (shop) {
+        products = products.filter((p) => (p.shop || p.store || "").toLowerCase() === shop.toLowerCase());
+      }
+      if (random) {
+        products = products
+          .map((p, i) => ({ p, r: Math.random(), i }))
+          .sort((a, b) => a.r - b.r || a.i - b.i)
+          .slice(0, limit)
+          .map(({ p }) => p);
+      } else {
+        products = products.slice(0, limit);
       }
 
       return new Response(JSON.stringify(products), {
