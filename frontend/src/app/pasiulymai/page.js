@@ -71,11 +71,11 @@ export default function PasiulymaiPage() {
     const q = sp.get("query")?.trim() || "";
     if (q) return;
     setLoading(true);
-    fetch(`/api/products`)
+    // Request unbiased random sample across all shops
+    fetch(`/api/products?random=true&limit=12`)
       .then((res) => res.json())
       .then((data) => {
-        const shuffled = data.sort(() => 0.5 - Math.random());
-        setProducts(shuffled.slice(0, 12));
+        setProducts(Array.isArray(data) ? data : []);
       })
       .catch((err) => {
         console.error("Klaida gaunant produktus:", err);
