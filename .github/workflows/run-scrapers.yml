@@ -56,8 +56,9 @@ jobs:
           echo "Starting IKI scraper..."
           cd scrapping
           python iki_scrape_final.py
+          STATUS=$?
           cd ..
-          echo "status=$?" >> $GITHUB_OUTPUT
+          echo "status=${STATUS}" >> $GITHUB_OUTPUT
 
       - name: Run Lidl scraper
         id: lidl
@@ -66,8 +67,9 @@ jobs:
           echo "Starting Lidl scraper..."
           cd scrapping
           python lidlscrape.py
+          STATUS=$?
           cd ..
-          echo "status=$?" >> $GITHUB_OUTPUT
+          echo "status=${STATUS}" >> $GITHUB_OUTPUT
 
       - name: Run Rimi scraper
         id: rimi
@@ -76,11 +78,12 @@ jobs:
           echo "Starting Rimi scraper..."
           cd scrapping
           python rimi_scrape_kodas.py
+          STATUS=$?
           cd ..
-          echo "status=$?" >> $GITHUB_OUTPUT
+          echo "status=${STATUS}" >> $GITHUB_OUTPUT
 
       - name: Upload CSV outputs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: scraper-outputs-${{ github.run_number }}
