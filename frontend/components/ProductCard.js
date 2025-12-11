@@ -77,6 +77,28 @@ export default function ProductCard({ product }) {
     shopDisplay = 'Maxima';
   }
 
+  const shopLogoMap = {
+    maxima: '/maxima.png',
+    iki: '/iki.png',
+    rimi: '/rimi.png',
+    lidl: '/lidl.png',
+    barbora: '/barbora.png',
+  };
+
+  const getShopLogoSrc = (name) => {
+    if (!name || typeof name !== 'string') return null;
+    const key = name.trim().toLowerCase();
+    return shopLogoMap[key] || `/${key}.png`;
+  };
+
+  const getShopLogoClass = (name) => {
+    if (!name || typeof name !== 'string') return 'h-5 w-auto';
+    const key = name.trim().toLowerCase();
+    // Slightly larger logos for IKI and LIDL
+    if (key === 'iki' || key === 'lidl') return 'h-6 w-auto';
+    return 'h-5 w-auto';
+  };
+
   return (
     <div className="w-64 p-4 border rounded-lg shadow-sm hover:shadow-md transition flex flex-col justify-between bg-white">
       <div className="h-40 mb-3 bg-white rounded-md flex items-center justify-center">
@@ -98,8 +120,28 @@ export default function ProductCard({ product }) {
       <div className="mt-3 flex items-center justify-between">
         <p className="font-bold text-lg">{String(primaryPrice).includes('€') ? primaryPrice : `${primaryPrice} €`}</p>
         {shopDisplay && (
-          <span className="ml-2 px-2 py-1 rounded bg-gray-100 text-xs font-semibold text-gray-700">
-            {shopDisplay}
+          <span className="ml-2 px-0 py-0 rounded text-xs font-semibold text-gray-700 flex items-center">
+            {getShopLogoSrc(shopDisplay) ? (
+              <img
+                src={getShopLogoSrc(shopDisplay)}
+                alt={shopDisplay}
+                className={getShopLogoClass(shopDisplay)}
+                loading="lazy"
+                onError={(e) => {
+                  // If image fails, show the text label instead
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    e.currentTarget.remove();
+                    const text = document.createElement('span');
+                    text.textContent = shopDisplay;
+                    text.className = 'text-xs font-semibold text-gray-700';
+                    parent.appendChild(text);
+                  }
+                }}
+              />
+            ) : (
+              shopDisplay
+            )}
           </span>
         )}
       </div>
