@@ -14,7 +14,7 @@ export default function PasiulymaiPage() {
   const [sort, setSort] = useState(""); // default: nerūšiuota pagal kainą
   const [shop, setShop] = useState(""); // default: visos parduotuvės
 
-  // Effect for query and shop (search/filter)
+  // Unified effect for search, filter, and random
   useEffect(() => {
     const handleLocationChange = () => {
       const sp = new URLSearchParams(window.location.search || "");
@@ -24,12 +24,38 @@ export default function PasiulymaiPage() {
         setQuery(q);
         setLoading(true);
 
-        if (!q) return; // Don't fetch here if no query
+        // Jei yra paieška, visada filtruojam pagal query, sort, shop
+        if (q) {
+          fetch(`/api/products?query=${encodeURIComponent(q)}&sort=${sort}&shop=${shop}`)
+            .then((res) => res.json())
+            .then((data) => setProducts(data))
+            .catch((err) => {
+              console.error("Klaida gaunant produktus:", err);
+              setProducts([]);
+            })
+            .finally(() => setLoading(false));
+          return;
+        }
 
-        // Siunčiam pasirinktus sort ir shop parametrus į API
-        fetch(`/api/products?query=${encodeURIComponent(q)}&sort=${sort}&shop=${shop}`)
+        // Jei nėra paieškos, bet yra pasirinktas sort arba shop, filtruojam pagal juos
+        if (sort || shop) {
+          fetch(`/api/products?sort=${sort}&shop=${shop}`)
+            .then((res) => res.json())
+            .then((data) => setProducts(data))
+            .catch((err) => {
+              console.error("Klaida gaunant produktus:", err);
+              setProducts([]);
+            })
+            .finally(() => setLoading(false));
+          return;
+        }
+
+        // Jei nėra nieko pasirinkta, rodom random produktus
+        fetch(`/api/products?random=true&limit=12`)
           .then((res) => res.json())
-          .then((data) => setProducts(data))
+          .then((data) => {
+            setProducts(Array.isArray(data) ? data : []);
+          })
           .catch((err) => {
             console.error("Klaida gaunant produktus:", err);
             setProducts([]);
@@ -64,25 +90,6 @@ export default function PasiulymaiPage() {
       history.replaceState = origReplace;
     };
   }, [sort, shop]);
-
-  // Effect for random products (no query)
-  useEffect(() => {
-    const sp = new URLSearchParams(window.location.search || "");
-    const q = sp.get("query")?.trim() || "";
-    if (q) return;
-    setLoading(true);
-    // Request unbiased random sample across all shops
-    fetch(`/api/products?random=true&limit=12`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProducts(Array.isArray(data) ? data : []);
-      })
-      .catch((err) => {
-        console.error("Klaida gaunant produktus:", err);
-        setProducts([]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
 
   return (
     <main className="min-h-screen bg-white">
