@@ -16,6 +16,7 @@ export default function PasiulymaiPage() {
 
   // Unified effect for search, filter, and random
   useEffect(() => {
+    if (typeof window === "undefined") return; // Tik naršyklėje
     const handleLocationChange = () => {
       const sp = new URLSearchParams(window.location.search || "");
       const q = sp.get("query")?.trim() || "";
@@ -162,7 +163,7 @@ export default function PasiulymaiPage() {
           {!loading && products.length === 0 && <p>Nerasta jokių pasiūlymų.</p>}
 
           <div className="flex flex-wrap justify-left gap-6">
-            {products.map((p) => (
+            {products.filter((p) => p.shelf_price != null).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
