@@ -14,7 +14,6 @@ export default function PasiulymaiPage() {
   const [sort, setSort] = useState(""); // default: nerūšiuota pagal kainą
   const [shop, setShop] = useState(""); // default: visos parduotuvės
 
-  // Unified effect for search, filter, and random
   useEffect(() => {
     if (typeof window === "undefined") return; // Tik naršyklėje
     const handleLocationChange = () => {
@@ -29,7 +28,7 @@ export default function PasiulymaiPage() {
         if (q) {
           fetch(`/api/products?query=${encodeURIComponent(q)}&sort=${sort}&shop=${shop}`)
             .then((res) => res.json())
-            .then((data) => setProducts(data))
+            .then((data) => setProducts(dedupeByProductMinPrice(data)))
             .catch((err) => {
               console.error("Klaida gaunant produktus:", err);
               setProducts([]);
@@ -42,7 +41,7 @@ export default function PasiulymaiPage() {
         if (sort || shop) {
           fetch(`/api/products?sort=${sort}&shop=${shop}`)
             .then((res) => res.json())
-            .then((data) => setProducts(data))
+            .then((data) => setProducts(dedupeByProductMinPrice(data)))
             .catch((err) => {
               console.error("Klaida gaunant produktus:", err);
               setProducts([]);
@@ -51,11 +50,12 @@ export default function PasiulymaiPage() {
           return;
         }
 
-        // Jei nėra nieko pasirinkta, rodom random produktus
-        fetch(`/api/products?random=true&limit=12`)
+        // Jei nėra nieko pasirinkta, rodom random 100 produktu
+          fetch(`/api/products?random=true&limit=100`)
           .then((res) => res.json())
           .then((data) => {
-            setProducts(Array.isArray(data) ? data : []);
+            const arr = Array.isArray(data) ? data : [];
+            setProducts(dedupeByProductMinPrice(arr));
           })
           .catch((err) => {
             console.error("Klaida gaunant produktus:", err);
@@ -137,8 +137,8 @@ export default function PasiulymaiPage() {
               Rimi
             </button>
             <button
-              onClick={() => setShop("barbora")}
-              className={`btn ${shop === "barbora" ? "btn-black btn-active" : "btn-ghost"}`}
+              onClick={() => setShop("maxima")}
+              className={`btn ${shop === "maxima" ? "btn-black btn-active" : "btn-ghost"}`}
             >
               Maxima
             </button>
@@ -163,12 +163,37 @@ export default function PasiulymaiPage() {
           {!loading && products.length === 0 && <p>Nerasta jokių pasiūlymų.</p>}
 
           <div className="flex flex-wrap justify-left gap-6">
-            {products.filter((p) => p.shelf_price != null).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+            {products
+              .filter((p) => p && p.shelf_price != null)
+              .map((p, idx) => (
+                <ProductCard key={`${p.id}-${p.shop ?? ''}-${p.shelf_price}-${idx}`} product={p} />
+              ))}
           </div>
         </div>
       </section>
     </main>
   );
+}
+
+// Pašaliname pasikartojimus: paliekame po vieną įrašą kiekvienam produktui,
+// parenkant mažiausią kainą (ir jos parduotuvę).
+function dedupeByProductMinPrice(items) {
+  try {
+    const byId = new Map();
+    for (const r of items || []) {
+      if (!r) continue;
+      const id = r.id ?? r.product_id ?? r.name; // fallback jeigu nėra id
+      const price = Number(r.shelf_price);
+      if (!id || Number.isNaN(price)) continue;
+      const cur = byId.get(id);
+      if (!cur || price < Number(cur.shelf_price)) {
+        byId.set(id, r);
+      }
+    }
+    let result = Array.from(byId.values());
+    // pritaikome esamą rūšiavimą, jei pasirinktas
+    return result;
+  } catch {
+    return Array.isArray(items) ? items : [];
+  }
 }

@@ -48,3 +48,48 @@ Notes
 - The upload endpoint uses `INSERT OR IGNORE` into `products (id, name, price)`. Modify to match your actual schema.
 - SQLite is fine for a small class project, but keep the DB size below your provider's volume limit and schedule backups.
 
+## Admin endpoints and typical flow
+
+The service exposes a few helper endpoints to bootstrap and populate the SQLite DB. If you set `ADMIN_API_KEY` in your environment, include `x-api-key: <ADMIN_API_KEY>` header in the requests.
+
+1) Check health and DB status
+
+```
+curl https://<your-backend>/health
+curl https://<your-backend>/admin/status -H "x-api-key: <ADMIN_API_KEY>"
+```
+
+2) Initialize schema (first-time only)
+
+This creates `/data/database.sqlite` from the bundled SQL dump at `/app/scrapping/database_sqlite.sql`.
+
+```
+curl -X POST https://<your-backend>/admin/init-db -H "x-api-key: <ADMIN_API_KEY>"
+```
+
+3) Import CSVs into the DB
+
+This scans `/app/scrapping/*.csv` inside the container and inserts into `stores`, `products`, and `prices`.
+
+```
+curl -X POST https://<your-backend>/admin/import-csvs -H "x-api-key: <ADMIN_API_KEY>"
+```
+
+4) Fetch products
+
+The `/products` endpoint supports filters and sorting. Examples:
+
+```
+curl "https://<your-backend>/products?limit=10"
+curl "https://<your-backend>/products?query=milk&shop=rimi&sort=price_asc&limit=10"
+curl "https://<your-backend>/products?random=true&limit=20"
+```
+
+## CORS configuration
+
+The backend allows `http://localhost:3000` by default for local dev. To allow your deployed frontend (e.g., Vercel), set the environment variable:
+
+- `VERCEL_URL=https://your-frontend-domain` (include scheme; e.g., `https://sutaupom-psi.vercel.app`)
+
+This origin will be added to the allowed CORS origins.
+
