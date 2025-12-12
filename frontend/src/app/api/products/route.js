@@ -5,107 +5,71 @@ export async function GET(request) {
   try {
     const url = new URL(request.url);
     const search = url.searchParams.get("query");
-
     const sort = url.searchParams.get("sort");
     const shop = url.searchParams.get("shop");
     const random = url.searchParams.get("random") === "true";
     const limitParam = url.searchParams.get("limit");
-    const limit = Math.max(1, Math.min(1000, Number(limitParam) || 500));
+    const offsetParam = url.searchParams.get("offset");
+    // limitai produktu kiek rodyti
+    const limit = Math.max(1, Math.min(10000, Number(limitParam) || 500));
+    const offset = Math.max(0, Math.min(1000000, Number(offsetParam) || 0));
 
+    // ima duomenis is backendo railway
+    const backendBase = process.env.NEXT_PUBLIC_API_URL
+    if (backendBase) {
+      const params = new URLSearchParams();
+      params.set("limit", String(limit));
+      if (search) params.set("query", search);
+      if (shop) params.set("shop", shop);
+      if (sort) params.set("sort", sort);
+      if (random) params.set("random", "true");
+      if (offset) params.set("offset", String(offset));
 
-    // Try to read from SQLite DB first (better for real deployments).
-    try {
-      const sqlite = await import('better-sqlite3').then(m => m.default || m);
-
-      // Try several candidate locations because Next.js may run with a different working directory
-      const candidates = [
-        join(process.cwd(), 'backend', 'db', 'products.db'),
-        join(process.cwd(), 'sutaupom', 'backend', 'db', 'products.db'),
-        join(process.cwd(), '..', 'sutaupom', 'backend', 'db', 'products.db'),
-        join(process.cwd(), '..', 'backend', 'db', 'products.db'),
-      ];
-
-      let dbPath = null;
-      const fs = await import('fs');
-      for (const c of candidates) {
-        if (fs.existsSync(c)) {
-          dbPath = c;
-          break;
+      try {
+        const resp = await fetch(`${backendBase.replace(/\/$/, "")}/products?${params.toString()}`, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          next: { revalidate: 60 },
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const products = Array.isArray(data) ? data : data.products || [];
+          return new Response(JSON.stringify(products), {
+            status: 200,
+            headers: { "Content-Type": "application/json", "X-Data-Source": "backend" },
+          });
         }
+        console.warn("Backend fetch failed:", resp.status, await resp.text());
+      } catch (e) {
+        console.warn("Backend unreachable, using local fallback:", e?.message || e);
       }
-
-      if (!dbPath) throw new Error('products.db not found in any candidate path');
-
-      const db = sqlite(dbPath, { readonly: true, fileMustExist: true });
-
-      let rows;
-      // Nauja SQL logika su filtravimu ir rusiavimu
-      let sql = "SELECT id, name as product_name, shelf_price, per_unit_price, image_url, shop FROM products WHERE 1=1";
-      let params = [];
-
-      if (search) {
-        sql += " AND LOWER(name) LIKE ?";
-        params.push(`%${search.trim().toLowerCase()}%`);
-      }
-      if (shop) {
-        sql += " AND LOWER(shop) = ?";
-        params.push(shop.toLowerCase());
-      }
-      if (random) {
-        sql += " ORDER BY RANDOM()";
-      } else if (sort === "price_asc") {
-        sql += " ORDER BY shelf_price ASC";
-      } else if (sort === "price_desc") {
-        sql += " ORDER BY shelf_price DESC";
-      } else {
-        sql += " ORDER BY id DESC";
-      }
-      sql += " LIMIT " + limit;
-      rows = db.prepare(sql).all(...params);
-
-      const products = rows.map(r => ({
-        id: r.id,
-        name: r.product_name,
-        shelf_price: r.shelf_price,
-        per_unit_price: r.per_unit_price,
-        image: r.image_url,
-        shop: r.shop,
-      }));
-
-      db.close && db.close();
-
-      return new Response(JSON.stringify(products), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (err) {
-      // If SQLite isn't available (e.g. missing native module) fall back to JSON file
-      console.warn('SQLite unavailable or DB missing, falling back to JSON:', err?.message || err);
-      const filePath = join(process.cwd(), "data/products.json");
-      const fileContents = await readFile(filePath, "utf-8");
-      let products = JSON.parse(fileContents);
-      if (search) {
-        const q = search.trim().toLowerCase();
-        products = products.filter((p) => p.name && p.name.toLowerCase().includes(q));
-      }
-      if (shop) {
-        products = products.filter((p) => (p.shop || p.store || "").toLowerCase() === shop.toLowerCase());
-      }
-      if (random) {
-        products = products
-          .map((p, i) => ({ p, r: Math.random(), i }))
-          .sort((a, b) => a.r - b.r || a.i - b.i)
-          .slice(0, limit)
-          .map(({ p }) => p);
-      } else {
-        products = products.slice(0, limit);
-      }
-
-      return new Response(JSON.stringify(products), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
     }
+
+    // fallback
+    const filePath = join(process.cwd(), "data/products.json");
+    const fileContents = await readFile(filePath, "utf-8");
+    let products = JSON.parse(fileContents);
+    if (search) {
+      const q = search.trim().toLowerCase();
+      products = products.filter((p) => p.name && p.name.toLowerCase().includes(q));
+    }
+    if (shop) {
+      products = products.filter((p) => (p.shop || p.store || "").toLowerCase() === shop.toLowerCase());
+    }
+    if (random) {
+      products = products
+        .map((p, i) => ({ p, r: Math.random(), i }))
+        .sort((a, b) => a.r - b.r || a.i - b.i)
+        .slice(0, limit)
+        .map(({ p }) => p);
+    } else {
+      products = products.slice(0, limit);
+    }
+
+    return new Response(JSON.stringify(products), {
+      status: 200,
+      headers: { "Content-Type": "application/json", "X-Data-Source": "local-fallback" },
+    });
   } catch (err) {
     console.error("Products API error:", err);
     return new Response(JSON.stringify({ error: "Server error while fetching products." }), {

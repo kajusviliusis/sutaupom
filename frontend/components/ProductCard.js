@@ -94,7 +94,7 @@ export default function ProductCard({ product }) {
   const getShopLogoClass = (name) => {
     if (!name || typeof name !== 'string') return 'h-5 w-auto';
     const key = name.trim().toLowerCase();
-    // Slightly larger logos for IKI and LIDL
+    // didesnes logo prie iki ir lidl
     if (key === 'iki' || key === 'lidl') return 'h-6 w-auto';
     return 'h-5 w-auto';
   };

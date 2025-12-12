@@ -1,11 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from typing import Optional
 import sqlite3
 import os
 import csv
 import io
-from fastapi.responses import Response
 
 app = FastAPI(title="Products API")
 
@@ -47,70 +46,60 @@ def health():
 
 
 @app.get("/products")
-def list_products(limit: int = 200):
+def list_products(
+    limit: int = 200,
+    query: Optional[str] = None,
+    shop: Optional[str] = None,
+    sort: Optional[str] = None,
+    random: Optional[bool] = False,
+    offset: Optional[int] = 0,
+):
     try:
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM products LIMIT ?", (limit,))
+
+        sql = (
+            """
+            SELECT p.product_id AS id,
+                   p.name AS name,
+                   p.image_url AS image,
+                   s.name AS shop,
+                   pr.price AS shelf_price
+            FROM prices pr
+            JOIN products p ON pr.product_id = p.product_id
+            JOIN stores s ON pr.store_id = s.store_id
+            WHERE 1=1
+            """
+        )
+        params: list = []
+
+        if query:
+            sql += " AND LOWER(p.name) LIKE ?"
+            params.append(f"%{query.strip().lower()}%")
+        if shop:
+            sql += " AND LOWER(s.name) = ?"
+            params.append(shop.strip().lower())
+
+        if random:
+            sql += " ORDER BY RANDOM()"
+        elif sort == "price_asc":
+            sql += " ORDER BY pr.price ASC"
+        elif sort == "price_desc":
+            sql += " ORDER BY pr.price DESC"
+        else:
+            sql += " ORDER BY pr.rowid DESC"
+
+        safe_limit = max(1, min(10000, int(limit)))
+        safe_offset = max(0, min(1000000, int(offset or 0)))
+        sql += " LIMIT ? OFFSET ?"
+        params.extend([safe_limit, safe_offset])
+
+        cur.execute(sql, tuple(params))
         rows = [dict(r) for r in cur.fetchall()]
         conn.close()
         return {"products": rows}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/upload-scrape")
-async def upload_scrape(file: UploadFile = File(...), _auth: bool = Depends(check_api_key)):
-    content_type = file.content_type or ""
-    content = await file.read()
-    if "csv" in content_type or file.filename.endswith(".csv"):
-        text = content.decode("utf-8")
-        reader = csv.DictReader(io.StringIO(text))
-        conn = get_conn()
-        cur = conn.cursor()
-        inserted = 0
-        for row in reader:
-            try:
-                cur.execute(
-                    "INSERT OR IGNORE INTO products (id, name, price) VALUES (?, ?, ?)",
-                    (row.get("id"), row.get("name"), row.get("price")),
-                )
-                inserted += 1
-            except Exception:
-                continue
-        conn.commit()
-        conn.close()
-        return {"status": "ok", "inserted": inserted}
-
-    if "json" in content_type or file.filename.endswith(".json"):
-        import json
-
-        data = json.loads(content)
-        if isinstance(data, dict) and "products" in data:
-            items = data["products"]
-        elif isinstance(data, list):
-            items = data
-        else:
-            raise HTTPException(status_code=400, detail="JSON must be an array or {products: [...]}" )
-
-        conn = get_conn()
-        cur = conn.cursor()
-        inserted = 0
-        for row in items:
-            try:
-                cur.execute(
-                    "INSERT OR IGNORE INTO products (id, name, price) VALUES (?, ?, ?)",
-                    (row.get("id"), row.get("name"), row.get("price")),
-                )
-                inserted += 1
-            except Exception:
-                continue
-        conn.commit()
-        conn.close()
-        return {"status": "ok", "inserted": inserted}
-
-    raise HTTPException(status_code=400, detail="Unsupported file type")
-
 
 @app.post("/admin/init-db")
 def init_db(_auth: bool = Depends(check_api_key)):
@@ -152,21 +141,6 @@ def admin_status(_auth: bool = Depends(check_api_key)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.get("/admin/dump")
-def admin_dump(_auth: bool = Depends(check_api_key)):
-    if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail=f"Database file not found at {DB_PATH}")
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        buf = io.StringIO()
-        for line in conn.iterdump():
-            buf.write(f"{line}\n")
-        conn.close()
-        sqltext = buf.getvalue()
-        return Response(content=sqltext, media_type="application/sql")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/admin/import-csvs")
