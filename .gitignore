@@ -1,3 +1,6 @@
+dev-data/
+*.sqlite
+*.db
 .env
 .venv/
 __pycache__/
