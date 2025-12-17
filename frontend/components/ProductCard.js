@@ -1,4 +1,4 @@
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, onAddToCart }) {
   const fallback =
     'data:image/svg+xml;utf8,' +
     '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">' +
@@ -146,6 +146,7 @@ export default function ProductCard({ product }) {
         )}
       </div>
       {perKgLabel && <p className="text-sm text-gray-500">{perKgLabel}</p>}
+        <button onClick={() => onAddToCart(product)} style={{fontSize: 24, background: 'white', color: 'black', border: 'none', borderRadius: 8, padding: '4px 16px', marginTop: 8, cursor: 'pointer'}}>+</button>
     </div>
   );
 }
