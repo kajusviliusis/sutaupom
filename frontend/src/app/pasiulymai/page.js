@@ -112,11 +112,48 @@ export default function PasiulymaiPage() {
       <div style={{ position: 'fixed', top: 1, right: 24, zIndex: 1100 }}>
         <button
           onClick={() => setCartOpen(true)}
+          aria-label="Atidaryti krepšelį"
           className="btn btn-outline flex items-center justify-center relative"
+          style={{ padding: 6 }}
         >
-          <span role="img" aria-label="Krepšelis" style={{ fontSize: '2.5rem', lineHeight: 1 }}>
-            🛒
-          </span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="50"
+            height="50"
+            aria-hidden="true"
+            style={{ display: 'block' }}
+          >
+            <path fill="#000" d="M7 4H3v2h2l3.6 7.59-1.35 2.45A1 1 0 0 0 8.9 17h8.45v-2H9.7l.93-1.68L18.1 6H7V4z" />
+            <circle fill="#000" cx="10" cy="20" r="1" />
+            <circle fill="#000" cx="18" cy="20" r="1" />
+          </svg>
+
+          {cart.length > 0 && (
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: 8, // lowered a bit
+                right: -6,
+                minWidth: 20,
+                height: 20,
+                padding: '0 6px',
+                background: '#000',
+                color: '#fff',
+                borderRadius: 999,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 700,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                lineHeight: 1,
+              }}
+            >
+              {cart.length}
+            </span>
+          )}
         </button>
       </div>
 

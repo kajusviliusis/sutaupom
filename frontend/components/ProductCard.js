@@ -100,7 +100,16 @@ export default function ProductCard({ product, onAddToCart }) {
   };
 
   return (
-    <div className="w-64 p-4 border rounded-lg shadow-sm hover:shadow-md transition flex flex-col justify-between bg-white">
+    <div className="w-64 p-4 border rounded-lg shadow-sm hover:shadow-md transition flex flex-col justify-between bg-white relative">
+      <button
+        onClick={() => onAddToCart(product)}
+        aria-label={`Pridėti ${product?.name || 'prekę'} į krepšelį`}
+        className="inline-flex items-center justify-center text-black rounded-sm p-1.5 text-lg hover:bg-gray-100 hover:ring-2 hover:ring-black/10 transition"
+        style={{ position: 'absolute', top: 8, right: 8, width: 36, height: 36, background: 'transparent', border: 'none', cursor: 'pointer', lineHeight: 1, borderRadius: 6 }}
+      >
+        +
+      </button>
+
       <div className="h-40 mb-3 bg-white rounded-md flex items-center justify-center">
         <img
           src={normalizeImageUrl(product?.image) || fallback}
@@ -118,9 +127,14 @@ export default function ProductCard({ product, onAddToCart }) {
       </div>
 
       <div className="mt-3 flex items-center justify-between">
-        <p className="font-bold text-lg">{String(primaryPrice).includes('€') ? primaryPrice : `${primaryPrice} €`}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="font-bold text-lg truncate" style={{ margin: 0 }}>
+            {String(primaryPrice).includes('€') ? primaryPrice : `${primaryPrice} €`}
+          </p>
+        </div>
+
         {shopDisplay && (
-          <span className="ml-2 px-0 py-0 rounded text-xs font-semibold text-gray-700 flex items-center">
+          <span className="ml-2 px-0 py-0 rounded text-xs font-semibold text-gray-700 flex items-center" style={{ flexShrink: 0 }}>
             {getShopLogoSrc(shopDisplay) ? (
               <img
                 src={getShopLogoSrc(shopDisplay)}
@@ -128,7 +142,6 @@ export default function ProductCard({ product, onAddToCart }) {
                 className={getShopLogoClass(shopDisplay)}
                 loading="lazy"
                 onError={(e) => {
-                  // If image fails, show the text label instead
                   const parent = e.currentTarget.parentElement;
                   if (parent) {
                     e.currentTarget.remove();
@@ -146,7 +159,6 @@ export default function ProductCard({ product, onAddToCart }) {
         )}
       </div>
       {perKgLabel && <p className="text-sm text-gray-500">{perKgLabel}</p>}
-        <button onClick={() => onAddToCart(product)} style={{fontSize: 24, background: 'white', color: 'black', border: 'none', borderRadius: 8, padding: '4px 16px', marginTop: 8, cursor: 'pointer'}}>+</button>
     </div>
   );
 }
