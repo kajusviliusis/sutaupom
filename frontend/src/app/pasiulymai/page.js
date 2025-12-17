@@ -1,10 +1,13 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import NavBar from "../../../components/NavBar.js";
 import SearchBar from "../../../components/SearchBar.js";
 import ProductCard from "../../../components/ProductCard.js";
+import Cart from "../../../components/Cart.js"; 
 
 export const dynamic = 'force-dynamic';
+
 
 
 export default function PasiulymaiPage() {
@@ -13,6 +16,14 @@ export default function PasiulymaiPage() {
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState(""); // default: nerūšiuota pagal kainą
   const [shop, setShop] = useState(""); // default: visos parduotuvės
+  // 2. Pridėk krepšelio būsenas
+  const [cart, setCart] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
+
+  // 3. Funkcija pridėti į krepšelį
+  const handleAddToCart = (product) => setCart([...cart, product]);
+  // 4. Funkcija prekei išimti
+  const handleRemoveFromCart = (idx) => setCart(cart.filter((_, i) => i !== idx));
 
   useEffect(() => {
     if (typeof window === "undefined") return; // Tik naršyklėje
@@ -96,6 +107,19 @@ export default function PasiulymaiPage() {
     <main className="min-h-screen bg-white">
       <NavBar />
 
+      {/* 5. Krepšelio mygtukas viršuje */}
+      {/* Krepšelio mygtukas viršutiniame dešiniajame kampe */}
+      <div style={{ position: 'fixed', top: 1, right: 24, zIndex: 1100 }}>
+        <button
+          onClick={() => setCartOpen(true)}
+          className="btn btn-outline flex items-center justify-center relative"
+        >
+          <span role="img" aria-label="Krepšelis" style={{ fontSize: '2.5rem', lineHeight: 1 }}>
+            🛒
+          </span>
+        </button>
+      </div>
+
       {/* Pranešimas apie nuolaidas */}
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 max-w-3xl mx-auto mt-6 mb-2 rounded">
         <p className="font-medium">Kai kurios nuolaidos parduotuvėse taikomos tik su lojalumo kortele arba perkant dvi ar daugiau prekių.</p>
@@ -166,11 +190,19 @@ export default function PasiulymaiPage() {
             {products
               .filter((p) => p && p.shelf_price != null)
               .map((p, idx) => (
-                <ProductCard key={`${p.id}-${p.shop ?? ''}-${p.shelf_price}-${idx}`} product={p} />
+                <ProductCard
+                  key={`${p.id}-${p.shop ?? ''}-${p.shelf_price}-${idx}`}
+                  product={p}
+                  onAddToCart={handleAddToCart} // 6. Perduok funkciją į ProductCard
+                />
               ))}
           </div>
         </div>
       </section>
+      {/* 7. Cart modalas */}
+      {cartOpen && (
+        <Cart cart={cart} onClose={() => setCartOpen(false)} onRemove={handleRemoveFromCart} />
+      )}
     </main>
   );
 }
